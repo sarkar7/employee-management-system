@@ -1,9 +1,16 @@
 package com.codeonist.ems.rest.controllers;
-
+/**
+ * 
+ * @author Sourabh Sarkar
+ * Date - 13-AUG-2021
+ * 
+ */
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,62 +22,65 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.codeonist.ems.beans.Employee;
+import com.codeonist.ems.rest.constants.UriConstants;
 import com.codeonist.ems.services.EmployeeService;
 
 @CrossOrigin(origins = "http://localhost:3000/")
 @RestController
-@RequestMapping("/api/v1/")
+@RequestMapping(UriConstants.API_VERSION_1)
 public class EmployeeRestController {
+
+	Logger logger = LoggerFactory.getLogger(EmployeeRestController.class);
 
 	@Autowired
 	private EmployeeService employeeService;
 
-	@GetMapping("/employees")
-	public ResponseEntity<List<Employee>> getAllEmployees(@RequestParam(required = false) String name) {
+	//Getting all the records
+	@GetMapping(UriConstants.ALL_EMPLOYEES)
+	public ResponseEntity<List<Employee>> getAllEmployees() {
+		List<Employee> employees = new ArrayList<>();
 		try {
-			List<Employee> employees = new ArrayList<>();
-			if (name == null) {
-				employeeService.findAllEmployees().forEach(employees::add);
-			} else {
-				employeeService.findByNameContaining(name).forEach(employees::add);
-			}
-			return new ResponseEntity<>(employees, HttpStatus.OK);
+			employeeService.findAllEmployees().forEach(employees::add);
+			return employees.size() >= 1 ? new ResponseEntity<>(employees, HttpStatus.OK)
+					: new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
 		} catch (Exception e) {
-			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+			logger.info("Couldn't return anything as " + e.getMessage());
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 	}
 
-	@RequestMapping("/TenEmployees")
+	//Getting few records
+	@RequestMapping(UriConstants.FEW_EMPLOYEES)
 	public List<Employee> getFirstTenEmployees() {
 		return employeeService.findFirstTenEmployees().toList();
 	}
 
-	@RequestMapping("/employees/{id}")
+	//Getting single record
+	@RequestMapping(UriConstants.SINGLE_EMPLOYEE)
 	public ResponseEntity<Employee> getEmployee(@PathVariable("id") Long id) {
+		logger.debug("Getting Single Employee with ID - " + id);
 		Optional<Employee> employeeData = Optional.ofNullable(employeeService.findByEmployeeId(id));
-		if (employeeData.isPresent()) {
-			return new ResponseEntity<>(employeeData.get(), HttpStatus.OK);
-		} else {
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-		}
+		return employeeData.isPresent() ? new ResponseEntity<>(employeeData.get(), HttpStatus.OK)
+				: new ResponseEntity<>(HttpStatus.NOT_FOUND);
 	}
 
-	@PostMapping("/employees")
+	//Creating new record
+	@PostMapping(UriConstants.CREATE_NEW_EMPLOYEES)
 	public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
 		try {
-			Employee _employee = employeeService.save(new Employee(employee.getName(), employee.getPosition(),
-					employee.getOffice(), employee.getAge(), employee.getStartDate(), employee.getSalary()));
-			return new ResponseEntity<>(_employee, HttpStatus.CREATED);
+			employeeService.save(employee);
+			return new ResponseEntity<>(HttpStatus.CREATED);
 		} catch (Exception e) {
+			logger.info("Couldn't create anything as " + e.getMessage());
 			return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
-	
-	@PutMapping("/employees/{id}")
+
+	//Updating an existing record
+	@PutMapping(UriConstants.SINGLE_EMPLOYEE)
 	public ResponseEntity<Employee> updateEmployee(@PathVariable("id") long id, @RequestBody Employee employee) {
 		Optional<Employee> employeeData = Optional.ofNullable(employeeService.findByEmployeeId(id));
 
@@ -84,27 +94,33 @@ public class EmployeeRestController {
 			_employee.setSalary(employee.getSalary());
 			return new ResponseEntity<>(employeeService.save(_employee), HttpStatus.OK);
 		} else {
+			logger.info("Couldn't find the record in database with ID - " + employee.getId());
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 
-	@DeleteMapping("/employees/{id}")
+	//Deleting an existing record
+	@DeleteMapping(UriConstants.SINGLE_EMPLOYEE)
 	public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable("id") long id) {
+		Optional<Employee> rec = Optional.ofNullable(employeeService.findByEmployeeId(id));
 		try {
-			employeeService.deleteById(id);
-			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			employeeService.delete(rec.get());
+			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			logger.info("Bad request as " + e.getMessage());
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 	}
 
-	@DeleteMapping("/employees")
+	//Deleting all the records
+	@DeleteMapping(UriConstants.ALL_EMPLOYEES)
 	public ResponseEntity<HttpStatus> deleteAllEmployees() {
 		try {
 			employeeService.deleteAll();
-			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			logger.info("Bad request as " + e.getMessage());
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 	}
 

@@ -47,4 +47,8 @@ public class EmployeeService {
 		employeeRepository.deleteAll();
 	}
 
+	public void delete(Employee employee) {
+		employeeRepository.delete(employee);
+	}
+
 }
