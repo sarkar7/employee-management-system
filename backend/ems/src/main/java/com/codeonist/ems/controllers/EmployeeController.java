@@ -15,12 +15,12 @@ public class EmployeeController {
 
 	@Autowired
 	private EmployeeService employeeService;
-	
+
 	@RequestMapping("/")
 	public String getAllEmployees(ModelMap model) {
 		List<Employee> list = employeeService.findAllEmployees();
 		model.addAttribute("empList", list);
 		return "employee";
 	}
-	
+
 }

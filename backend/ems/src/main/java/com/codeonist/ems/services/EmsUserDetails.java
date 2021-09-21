@@ -25,7 +25,7 @@ public class EmsUserDetails implements UserDetails {
 
 	@Override
 	public String getPassword() {
-		return "pass";
+		return "foo";
 	}
 
 	@Override
