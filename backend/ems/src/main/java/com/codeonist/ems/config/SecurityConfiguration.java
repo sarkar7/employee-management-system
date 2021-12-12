@@ -1,23 +1,44 @@
 package com.codeonist.ems.config;
 
-/*
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import com.codeonist.ems.config.util.JwtRequestFilter;
-import com.codeonist.ems.services.EmsUserDetailService;
-*/
-//@EnableWebSecurity
-public class SecurityConfiguration /* extends WebSecurityConfigurerAdapter */ {
+@EnableWebSecurity
+public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
+
+	@Qualifier("userDetailsServiceImpl")
+	@Autowired
+	private UserDetailsService userDetailsService;
+
+	@Bean
+	public BCryptPasswordEncoder bCryptPasswordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
+
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http.authorizeRequests().antMatchers("/resources/**", "/registration").permitAll().anyRequest().authenticated()
+				.and().formLogin().loginPage("/login").permitAll().and().logout().permitAll();
+	}
+
+	@Bean
+	public AuthenticationManager customAuthenticationManager() throws Exception {
+		return authenticationManager();
+	}
+
+	@Autowired
+	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+		auth.userDetailsService(userDetailsService).passwordEncoder(bCryptPasswordEncoder());
+	}
+
 	/*
 	 * @Autowired private EmsUserDetailService emsUserDetailService;
 	 * 
@@ -26,26 +47,23 @@ public class SecurityConfiguration /* extends WebSecurityConfigurerAdapter */ {
 	 * @Override protected void configure(AuthenticationManagerBuilder auth) throws
 	 * Exception { auth.userDetailsService(emsUserDetailService); }
 	 * 
-	 * 
 	 * @Override protected void configure(HttpSecurity http) throws Exception {
-	 * http.csrf().disable() .authorizeRequests()
-	 * //.antMatchers("/admin").hasRole("ADMIN")
-	 * //.antMatchers("/user").hasAnyRole("ADMIN", "USER")
-	 * .antMatchers("/authenticate").permitAll().anyRequest().authenticated() .and()
-	 * .sessionManagement() .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+	 * http.csrf().disable().authorizeRequests() //
+	 * .antMatchers("/admin").hasRole("ADMIN") //
+	 * .antMatchers("/user").hasAnyRole("ADMIN", "USER")
+	 * .antMatchers("/authenticate").permitAll().anyRequest().authenticated().and().
+	 * sessionManagement() .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 	 * 
 	 * http.addFilterBefore(jwtRequestFilter,
 	 * UsernamePasswordAuthenticationFilter.class); }
-	 * 
-	 * 
 	 * 
 	 * @Override
 	 * 
 	 * @Bean public AuthenticationManager authenticationManagerBean() throws
 	 * Exception { return super.authenticationManagerBean(); }
 	 * 
-	 * 
 	 * @Bean public PasswordEncoder getPasswordEncoder() { return
 	 * NoOpPasswordEncoder.getInstance(); }
 	 */
+
 }
